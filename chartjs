@@ -1,0 +1,174 @@
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { PrimeControl } from '../../models/primeControl';
+import { Chart } from 'chart.js';
+
+@Component({
+	selector: 'prime-chart',
+	templateUrl: './prime-chart.component.html'
+})
+export class PrimeChartComponent extends PrimeControl {
+
+	myChart: any;
+
+	private colorsDefault = [
+		"#B2C99C",
+		"#ABC99C",
+		"#B3E6CC",
+		"#B8E0D3",
+		"#B3E6E6",
+		"#94C7D1",
+		"#94BDD1",
+		"#9CB2C9",
+		"#B8C5E0",
+		"#B8B8E0",
+		"#9E94D1",
+		"#A894D1",
+		"#BA9CC9",
+		"#D194B2",
+		"#A65973",
+		"#E6B3CB",
+		"#D98CRC",
+		"#CC7796",
+		"#D9A61C",
+		"#D9B27C",
+		"#D9BF7C",
+		"#D9CC5C",
+		"#D9D90C",
+		"#C2C9AC",
+		"#BAC95C",
+		"#B2C96C",
+		"#ABC9DC",
+		"#B3E6CC",
+		"#B8E0C3",
+		"#B3E6A6",
+		"#94C7A1",
+		"#94BDA1",
+		"#9CB2E9",
+		"#B8C5A0",
+		"#B8B8D0",
+		"#9E94E1",
+		"#A894A1",
+		"#BA9CA9",
+		"#D194C2",
+		"#A659B3",
+		"#A659A3"];
+
+	private TYPES = {
+		'torta': 'pie', 'barra': 'bar', 'barraHorizontal': 'horizontalBar', 'dona': 'doughnut',
+		'linea': 'line', 'radar': 'radar', 'area': 'polarArea'
+	};
+
+	@Output()
+	public onSelected = new EventEmitter<{ id: number, label: string, value: number }>();
+
+	@Input()
+	idChart: string = "chart";
+
+	@Input()
+	type: 'torta' | 'barra' | 'horizontalBar' | 'dona' | 'linea' | 'radar' | 'area' = 'barra';
+
+	@Input()
+	labels: string[];
+
+	@Input()
+	label: string = '';
+
+	@Input()
+	title: string = '';
+
+	@Input()
+	dataSet: Array<{ id: any, label: string, value: number }>;
+
+	@Input()
+	colors: string[] = this.colorsDefault;
+
+	@Input()
+	width: number = 400;
+
+	@Input()
+	height: number = 300;
+
+	@Input()
+	labelDisplay: boolean = true;
+
+	@Input()
+	titleDisplay: boolean = true;
+
+	@Input()
+	labelPosition: string = 'top';
+
+	@Input()
+	titlePosition: string = 'top';
+
+	primeInit(): void {
+
+		if (this.dataSet) {
+			let dataSetLabels: Array<string> = this.getLabels();
+			let dataSetValues: Array<number> = this.getValues();
+
+			let _this = this;
+
+			let colores: string[] = [];
+			while (colores.length < this.dataSet.length) colores = colores.concat(this.colors);
+			this.colors = colores;
+
+			this.myChart = new Chart(this.idChart, {
+				type: this.TYPES[this.type],
+				data: {
+					labels: dataSetLabels,
+					datasets: [{
+						label: this.label,
+						data: dataSetValues,
+						backgroundColor: this.colors,
+						fill: false,
+					}]
+				},
+				options: {
+					cutoutPercentage: this.type == 'dona' ? 80 : null,
+					title: {
+						text: this.title,
+						display: this.titleDisplay,
+						position: this.titlePosition
+					},
+					legend: {
+						display: this.labelDisplay,
+						position: this.labelPosition
+					},
+					'onClick': function (evt, item) {
+						if (item) {
+							_this.onElementClick(evt, item);
+						}
+					}
+				}
+			});
+		}
+	}
+
+	onElementClick(evt, item) {
+		if (item[0]) {
+			let el = this.dataSet[item[0]._index];
+			this.onSelected.emit({ id: el.id, label: el.label, value: el.value });
+		}
+	}
+
+	private getLabels(): string[] {
+		let labs: string[] = [];
+		if (this.dataSet) {
+			this.dataSet.forEach(element => {
+				labs.push(element.label)
+			});
+		}
+		return labs;
+	}
+
+	private getValues(): number[] {
+		let vals: number[] = [];
+		if (this.dataSet) {
+			this.dataSet.forEach(element => {
+				vals.push(element.value)
+			});
+		}
+		return vals;
+	}
+
+}
