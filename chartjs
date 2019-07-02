@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
 import { PrimeControl } from '../../models/primeControl';
 import { Chart } from 'chart.js';
 
@@ -8,6 +8,8 @@ import { Chart } from 'chart.js';
 })
 export class PrimeChartComponent extends PrimeControl {
 
+	@ViewChild('ref', { static: true }) ref: ElementRef<HTMLCanvasElement>;
+	
 	myChart: any;
 
 	private colorsDefault = [
@@ -62,9 +64,6 @@ export class PrimeChartComponent extends PrimeControl {
 	public onSelected = new EventEmitter<{ id: number, label: string, value: number }>();
 
 	@Input()
-	idChart: string = "chart";
-
-	@Input()
 	type: 'torta' | 'barra' | 'horizontalBar' | 'dona' | 'linea' | 'radar' | 'area' = 'barra';
 
 	@Input()
@@ -103,6 +102,8 @@ export class PrimeChartComponent extends PrimeControl {
 	primeInit(): void {
 
 		if (this.dataSet) {
+      
+      			let node = this.ref.nativeElement;
 			let dataSetLabels: Array<string> = this.getLabels();
 			let dataSetValues: Array<number> = this.getValues();
 
@@ -112,7 +113,7 @@ export class PrimeChartComponent extends PrimeControl {
 			while (colores.length < this.dataSet.length) colores = colores.concat(this.colors);
 			this.colors = colores;
 
-			this.myChart = new Chart(this.idChart, {
+			this.myChart = new Chart(node, {
 				type: this.TYPES[this.type],
 				data: {
 					labels: dataSetLabels,
