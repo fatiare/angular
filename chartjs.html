@@ -1,6 +1,16 @@
-<div style="display:block;width:100%;">
-	<h2>{{title}}</h2>
-	<div style="display:block;width:600px;height: 300px; ">
-		<canvas #ref></canvas>
+<div class="wrap-grafico">
+
+	<div class="{{classGrafico}}">
+		<canvas #ref [style.height]="height + 'px'"></canvas>
 	</div>
+
+	<div class="wrap-grafico__wrap-referencias" *ngIf="!modoSoloGrafico">
+		<!-- RENGLON REFERENCIA -->
+		<div class="wrap-referencias__renglon-ref" *ngFor="let item of dataSet; index as i;">
+			<span class="renglon-ref__ref-color" [ngStyle]="{'background-color': colors[i]}"></span>
+			<label [ngClass]="{'label-referencia-selected' : isRenglonSelected(item)}" (mouseenter)="marcarRenglon(item)" (mouseleave)="desmarcarRenglon(item)" (click)="selectRenglon(item)"><b>{{item.value | abreviado}}</b>{{item.label}}</label>
+		</div>
+		<!-- FIN RENGLON REFERENCIA -->
+	</div>
+
 </div>
