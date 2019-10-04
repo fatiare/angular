@@ -1,0 +1,19 @@
+<div class="col-30w col-mobile">
+	<form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+		<div class="row-form">
+			<div class="col-50w col-mobile">
+				<select formControlName="countryControl" (change)="countryChanged($event.target.value)">
+					<option value="">Seleccione Country</option>
+					<option *ngFor="let country of countries" [value]="country.id">{{country.descripcion}}</option>
+				</select>
+			</div>
+			<div class="col-50w col-mobile">
+				<select formControlName="cityControl" (change)="cityChanged($event.target.value)">
+					<option value="">Seleccione City</option>
+					<option *ngFor="let city of cities" [value]="city.id">{{city.descripcion}}</option>
+				</select>
+			</div>
+		</div>
+		<button type="button" (click)="send()">Enviar</button>
+	</form>
+</div>
