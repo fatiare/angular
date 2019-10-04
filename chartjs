@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
 import { PrimeControl } from '../../models/primeControl';
 import { Chart } from 'chart.js';
 
@@ -8,11 +8,24 @@ import { Chart } from 'chart.js';
 })
 export class PrimeChartComponent extends PrimeControl {
 
-	@ViewChild('ref', { static: true }) ref: ElementRef<HTMLCanvasElement>;
-	
+	@ViewChild('ref') ref: ElementRef<HTMLCanvasElement>;
+
 	myChart: any;
+	myData: any;
+	myOptions: any;
+	node: any;
 
 	private colorsDefault = [
+		/*"#E6B3BB",
+		"#D98C8C",
+		"#CC7766",
+		"#D9A68C",
+		"#D9B28C",
+		"#D9BF8C",
+		"#D9CC8C",
+		"#D9D98C",
+		"#C2C99C",
+		"#BAC99C",*/
 		"#B2C99C",
 		"#ABC99C",
 		"#B3E6CC",
@@ -60,11 +73,15 @@ export class PrimeChartComponent extends PrimeControl {
 		'linea': 'line', 'radar': 'radar', 'area': 'polarArea'
 	};
 
+	private renglonSelected: any;
+
+	modoSoloGrafico: boolean = false;
+
 	@Output()
 	public onSelected = new EventEmitter<{ id: number, label: string, value: number }>();
 
 	@Input()
-	type: 'torta' | 'barra' | 'horizontalBar' | 'dona' | 'linea' | 'radar' | 'area' = 'barra';
+	type: 'torta' | 'barra' | 'barraHorizontal' | 'dona' | 'linea' | 'radar' | 'area' = 'barra';
 
 	@Input()
 	labels: string[];
@@ -75,37 +92,61 @@ export class PrimeChartComponent extends PrimeControl {
 	@Input()
 	title: string = '';
 
+	private _dataSet: Array<{ id: any, label: string, value: number }>;
 	@Input()
-	dataSet: Array<{ id: any, label: string, value: number }>;
+	set dataSet(value: Array<{ id: any, label: string, value: number }>) {
+		this._dataSet = value;
+		if (this.myChart != null) {
+			this.initializeChart();
+		}
+	}
+	get dataSet(): Array<{ id: any, label: string, value: number }> {
+		return this._dataSet;
+	}
 
 	@Input()
 	colors: string[] = this.colorsDefault;
 
 	@Input()
-	width: number = 400;
+	width: number = 300;
 
 	@Input()
-	height: number = 300;
+	height: number = 150;
 
 	@Input()
-	labelDisplay: boolean = true;
+	escalaHorizontalDisplay: boolean = false;
 
 	@Input()
-	titleDisplay: boolean = true;
+	escalaVerticalDisplay: boolean = false;
+
+	@Input()
+	labelDisplay: boolean = false;
 
 	@Input()
 	labelPosition: string = 'top';
 
 	@Input()
-	titlePosition: string = 'top';
+	cartesianHidden: boolean = true;
+
+	@Input()
+	legendDisplay: boolean = false;
+
+	@Input()
+	classGrafico: string;
+
+	@Input()
+	fullToolTip: boolean = true;
 
 	primeInit(): void {
+		this.node = this.ref.nativeElement;
+
+		this.setModoGrafico();
 
 		if (this.dataSet) {
-      
-      			let node = this.ref.nativeElement;
 			let dataSetLabels: Array<string> = this.getLabels();
 			let dataSetValues: Array<number> = this.getValues();
+
+			this.height = this.setHeight(dataSetValues.length);
 
 			let _this = this;
 
@@ -113,36 +154,97 @@ export class PrimeChartComponent extends PrimeControl {
 			while (colores.length < this.dataSet.length) colores = colores.concat(this.colors);
 			this.colors = colores;
 
-			this.myChart = new Chart(node, {
-				type: this.TYPES[this.type],
-				data: {
-					labels: dataSetLabels,
-					datasets: [{
-						label: this.label,
-						data: dataSetValues,
-						backgroundColor: this.colors,
-						fill: false,
+			this.myData = {
+				labels: dataSetLabels,
+				datasets: [{
+					label: this.label,
+					data: dataSetValues,
+					backgroundColor: this.colors,
+					fill: false,
+				}]
+			};
+
+			this.myOptions = {
+
+				elements: {
+					arc: {
+						borderWidth: 0,
+					}
+				},
+				responsive: true,
+				maintainAspectRatio: false,
+				cutoutPercentage: this.type == 'dona' ? 80 : null,
+				title: {
+					text: this.title,
+					display: this.title != '' ? true : false,
+				},
+				legend: {
+					display: false,
+					position: this.labelPosition
+				},
+				'onClick': function (evt, item) {
+					if (item) {
+						_this.onElementClick(evt, item);
+					}
+				},
+				'onHover': function (evt, item) {
+					if (item) {
+						_this.onElementMouseUp(evt, item);
+					}
+				},
+
+				scales: this.cartesianHidden ? {} : {
+					yAxes: [{
+						barPercentage: 0.5,
+						ticks: {
+							display: this.escalaVerticalDisplay,
+							min: 0,
+						}
+					}],
+					xAxes: [{
+						barPercentage: 0.5,
+						ticks: {
+							display: this.escalaHorizontalDisplay,
+							min: 0,
+						}
 					}]
 				},
-				options: {
-					cutoutPercentage: this.type == 'dona' ? 80 : null,
-					title: {
-						text: this.title,
-						display: this.titleDisplay,
-						position: this.titlePosition
-					},
-					legend: {
-						display: this.labelDisplay,
-						position: this.labelPosition
-					},
-					'onClick': function (evt, item) {
-						if (item) {
-							_this.onElementClick(evt, item);
-						}
+				tooltips: this.fullToolTip ? {} : {
+					callbacks: {
+						label: function (tooltipItem, data) {
+							return data['datasets'][0]['data'][tooltipItem['index']];
+						},
 					}
 				}
+			};
+
+			this.myChart = new Chart(this.node, {
+				type: this.TYPES[this.type],
+				data: this.myData,
+				options: this.myOptions,
 			});
 		}
+	}
+
+	private initializeChart(): void {
+
+		let dataSetLabels: Array<string> = this.getLabels();
+		let dataSetValues: Array<number> = this.getValues();
+
+		this.height = this.setHeight(dataSetValues.length);
+
+		this.myData = {
+			labels: dataSetLabels,
+			datasets: [{
+				label: this.label,
+				data: dataSetValues,
+				backgroundColor: this.colors,
+				fill: false,
+			}]
+		};
+
+		this.myChart.data = this.myData;
+		this.myChart.update();
 	}
 
 	onElementClick(evt, item) {
@@ -150,6 +252,30 @@ export class PrimeChartComponent extends PrimeControl {
 			let el = this.dataSet[item[0]._index];
 			this.onSelected.emit({ id: el.id, label: el.label, value: el.value });
 		}
+	}
+
+	onElementMouseUp(evt, item) {
+		this.renglonSelected = null;
+		if (item[0]) {
+			this.renglonSelected = this.dataSet[item[0]._index];
+		}
+	}
+
+	isRenglonSelected(value: { id: any, label: string, value: number }) {
+		return value == this.renglonSelected;
+	}
+
+	marcarRenglon(value: { id: any, label: string, value: number }) {
+		this.renglonSelected = value;
+	}
+
+	desmarcarRenglon(value: { id: any, label: string, value: number }) {
+		this.renglonSelected = null;
+	}
+
+	selectRenglon(value: { id: any, label: string, value: number }) {
+		this.renglonSelected = value;
+		this.onSelected.emit(value);
 	}
 
 	private getLabels(): string[] {
@@ -170,6 +296,46 @@ export class PrimeChartComponent extends PrimeControl {
 			});
 		}
 		return vals;
+	}
+
+	private setHeight(value: number): number {
+		switch (this.type) {
+			case 'barraHorizontal':
+				return (50 + (30 * value));
+				break;
+			default:
+				if (this.height > 150)
+					return this.height;
+				else
+					return 150;
+				break;
+		}
+	}
+
+	private setModoGrafico() {
+
+		if (this.labelDisplay) {
+			switch (this.type) {
+				case 'dona':
+					this.modoSoloGrafico = false;
+					break;
+				case 'torta':
+					this.modoSoloGrafico = false;
+					break;
+				case 'area':
+					this.modoSoloGrafico = false;
+					break;
+				case 'radar':
+					this.modoSoloGrafico = false;
+					break;
+				default:
+					this.modoSoloGrafico = true;
+					break;
+			}
+		}
+		else {
+			this.modoSoloGrafico = true;
+		}
 	}
 
 }
