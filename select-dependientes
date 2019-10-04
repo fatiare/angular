@@ -1,0 +1,48 @@
+import { Component, OnInit } from '@angular/core';
+import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
+import { CountryService } from '@app/services/country.service';
+import { CityService } from '@app/services/city.service';
+
+@Component({
+	selector: 'test',
+	templateUrl: './test.component.html'
+})
+export class TestComponent implements OnInit {
+
+	countries: country[];
+	cities: city[];
+	userForm: FormGroup;
+
+	constructor(private formBuilder: FormBuilder, private countryService: CountryService, private cityService: CityService) { }
+
+	ngOnInit() {
+		this.userForm = this.formBuilder.group({
+			countryControl: new FormControl(''),
+			cityControl: new FormControl('')
+		})
+	}
+
+	private get getCountry(): number { return this.userForm.get("countryControl").value; }
+  private get getCity(): number { return this.userForm.get("cityControl").value; }
+
+	getCountries(): void {
+		this.countryService.getAll().subscribe(ret => {
+			this.countries = ret;
+		});
+	}
+
+	getCitiesByCountry(idCountry: number): void {
+		this.cityService.getByCountry(idCountry).subscribe(ret => {
+			this.cities = ret;
+		});
+	}
+
+	countryChanged(idCountry) {
+		console.log("countryChanged");
+		this.getCitiesByCountry(idCountry);
+	}
+  
+  send() {
+		console.log("send");
+	}
+}
