@@ -1,0 +1,3 @@
+<div *ngFor="let day of days">
+  <input name="dayOfWeek" type="radio" value="{{day}}" (change)="radioChangeHandler($event)">{{day}}
+</div>
